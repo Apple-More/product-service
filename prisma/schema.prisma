@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Category {
+  id              String        @id @default(uuid())
+  categoryName    String
+  products        Product[]
+}
+
+model Product {
+  id              String        @id @default(uuid())
+  productName     String
+  description     String?
+  specification   String?
+  category        Category      @relation(fields: [categoryId], references: [id])
+  categoryId      String
+  adminId         String
+  variants        Product_Variant[]
+  images          ProductImage[]
+}
+
+model ProductImage {
+  id              String         @id @default(uuid())
+  imageUrl        String
+  isHero          Boolean
+  product         Product        @relation(fields: [productId], references: [id])
+  productId       String
+}
+
+model Product_Variant {
+  id              String          @id @default(uuid())
+  price           Float
+  stock           Int
+  product         Product         @relation(fields: [productId], references: [id])
+  productId       String
+  attributes      Product_Variant_Attribute[]
+}
+
+model Product_Variant_Attribute {
+  id                  String             @id @default(uuid())
+  productVariantId    String
+  productVariant      Product_Variant    @relation(fields: [productVariantId], references: [id])
+  attributeValueId    String
+  attributeValue      Product_Attribute_Value  @relation(fields: [attributeValueId], references: [id])
+}
+
+model Product_Attribute_Value {
+  id                     String                    @id @default(uuid())
+  value                  String
+  attributeId            String
+  attribute              Product_Attribute         @relation(fields: [attributeId], references: [id])
+  productVariantAttributes Product_Variant_Attribute[]
+}
+
+model Product_Attribute {
+  id         String                    @id @default(uuid())
+  name       String
+  values     Product_Attribute_Value[]
+}
