@@ -1,0 +1,545 @@
+import prisma from '../config/prisma';
+import { Request, Response, NextFunction } from 'express';
+
+//Test route
+export const test = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    res.status(200).json({
+      status: 'success',
+      message: 'Payment TEST',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Create product attribute
+export const createProductAttribute = async ( req: Request, res: Response, next: NextFunction,) => {
+  try {
+    const { name } = req.body;
+    const newAttribute = await prisma.product_Attribute.create({
+      data: {
+        name,
+      },
+    });
+    res.status(201).json({
+      status: 'success',
+      message: 'Product attribute added successfull',
+      data: newAttribute,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get a product attribute by ID (including its values)
+export const getProductAttribute = async ( req: Request, res: Response, next: NextFunction,) => {
+  try {
+    const { id } = req.params;
+    const attribute = await prisma.product_Attribute.findUnique({
+      where: { id },
+      include: {
+        values: true, 
+      },
+    });
+    if (!attribute) {
+      res.status(404).json({ error: 'Product attribute not found' });
+    }
+    res.status(201).json({
+      status: 'success',
+      message: 'Product attribute fetched successfull',
+      data: attribute,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get all product attributes with their values
+export const getAllProductAttributes = async ( req: Request, res: Response, next: NextFunction,) => {
+  try {
+    const attributes = await prisma.product_Attribute.findMany({
+      include: {
+        values: true, // Include related Product_Attribute_Value entries for each attribute
+      },
+    });
+    res.status(201).json({
+      status: 'success',
+      message: 'Product attributes fetched successfull',
+      data: attributes,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create a product attribute value
+export const createProductAttributeValue = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, attributeId } = req.body;
+
+    const attributeExists = await prisma.product_Attribute.findUnique({
+      where: { id: attributeId },
+    });
+
+    if (!attributeExists) {
+     res.status(404).json({ message: 'Product Attribute not found' });
+    }
+
+    const newAttributeValue = await prisma.product_Attribute_Value.create({
+      data: {
+        value,
+        attributeId,
+      },
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Attribute values added successfull',
+      data: newAttributeValue,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get a product attribute value by attribute Id
+export const getProductAttributeValuesByAttributeId = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { attributeId } = req.params;
+
+    // Fetch product attribute values linked to the attribute ID
+    const attributeValues = await prisma.product_Attribute_Value.findMany({
+      where: { attributeId },
+      include: {
+        attribute: false, // Includes associated Product_Attribute information
+      },
+    });
+
+    if (!attributeValues.length) {
+     res.status(404).json({ message: 'No Product Attribute Values found for this attribute ID' });
+    }
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Product Attribute Values found for this attribute ID',
+      data: attributeValues,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create a Product Variant Attribute
+export const createProductVariantAttribute = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { productVariantId, attributeValueId } = req.body;
+
+    const newProductVariantAttribute = await prisma.product_Variant_Attribute.create({
+      data: {
+        productVariantId,
+        attributeValueId,
+      },
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Product variant attribute created successfull',
+      data: newProductVariantAttribute,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get all Product Variant Attributes 
+export const getAllProductVariantAttributes = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1; // Default to page 1
+    let limit = parseInt(req.query.limit as string) || 10; // Default to 10 items per page
+
+    // Ensure the limit is within reasonable bounds
+    const MAX_LIMIT = 100;
+    limit = Math.min(limit, MAX_LIMIT);
+
+    const skip = (page - 1) * limit;
+
+    const productVariantAttributes = await prisma.product_Variant_Attribute.findMany({
+      skip,
+      take: limit,
+      include: {
+        productVariant: true,
+        attributeValue: true,
+      },
+    });
+
+    const totalCount = await prisma.product_Variant_Attribute.count();
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.status(200).json({
+      data: productVariantAttributes,
+      meta: {
+        totalCount,
+        totalPages,
+        currentPage: page,
+        itemsPerPage: limit,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create Product
+export const createProduct = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { productName, description, specification, categoryId, adminId } = req.body;
+
+    const newProduct = await prisma.product.create({
+      data: {
+        productName,
+        description,
+        specification,
+        categoryId,
+        adminId,
+      }
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Product created successfully',
+      data: newProduct,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+
+}
+
+// Get all product
+export const getAllProducts = async ( req: Request, res: Response, next: NextFunction)=> {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    let limit = parseInt(req.query.limit as string) || 10;
+
+    const MAX_LIMIT = 100;
+    limit = Math.min(limit, MAX_LIMIT);
+
+    const categoryId = req.query.categoryId as string | undefined;
+
+    const skip = (page - 1) * limit;
+
+    // Fetch products with filtering and pagination
+    const products = await prisma.product.findMany({
+      where: categoryId ? { categoryId } : {},
+      skip,
+      take: limit,
+      include: {
+        images: {
+          where: { isHero: true },
+        },
+        variants: true
+      },
+    });
+
+    if (products.length === 0) {
+      res.status(404).json({
+        status: 'fail',
+        message: 'No Products found',
+      });
+    }
+
+    const totalCount = await prisma.product.count();
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'products fetched successful',
+      data: products,
+      meta: {
+        totalCount,
+        totalPages,
+        currentPage: page,
+        itemsPerPage: limit,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get Product by ID
+export const getProductById = async ( req: Request, res: Response, next: NextFunction)  => {
+  try {
+    const { id } = req.params;
+
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        variants: true,  // Include product variants
+        images: true,    // Include all product images
+      },
+    });
+
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Product fetched successfully',
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update Product details
+export const updateProduct = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { productName, description, specification, categoryId } = req.body;
+
+    // Check if the product exists before attempting to update it
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!existingProduct) {
+      res.status(404).json({
+        error: 'Product not found',
+      });
+    }
+
+    // Proceed to update the product if it exists
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        productName,
+        description,
+        specification,
+        categoryId,
+      },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Product updated successfully',
+      data: updatedProduct,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete Product
+export const deleteProduct = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    // Check if the product exists before attempting to update it
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!existingProduct) {
+      res.status(404).json({
+        error: 'Product not found',
+      });
+    }
+
+    // First, delete the associated product images and variants to avoid foreign key constraint violations
+    await prisma.productImage.deleteMany({
+      where: { productId: id },
+    });
+
+    await prisma.product_Variant.deleteMany({
+      where: { productId: id },
+    });
+
+    // Now delete the product itself
+    const deletedProduct = await prisma.product.delete({
+      where: { id },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Product deleted successfully',
+      data: deletedProduct,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create a category
+export const createCategory = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { categoryName } = req.body;
+
+    // Create a new category in the database
+    const newCategory = await prisma.category.create({
+      data: {
+        categoryName,
+      },
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Category created successfully',
+      data: newCategory,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get all categories
+export const getAllCategories = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Parse pagination parameters from the query string
+    const page = parseInt(req.query.page as string) || 1; // Default to page 1
+    let limit = parseInt(req.query.limit as string) || 10; // Default to 10 items per page
+
+    // Ensure the limit is within reasonable bounds
+    const MAX_LIMIT = 100;
+    limit = Math.min(limit, MAX_LIMIT);
+
+    const skip = (page - 1) * limit;
+
+    // Fetch paginated categories from the database
+    const categories = await prisma.category.findMany({
+      skip,
+      take: limit,
+      include: {
+        products: true, // Include associated products if needed
+      },
+    });
+
+    // Get total count for pagination metadata
+    const totalCount = await prisma.category.count();
+    const totalPages = Math.ceil(totalCount / limit);
+
+    if (categories.length === 0) {
+      res.status(404).json({
+        status: 'fail',
+        message: 'No categories found',
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: categories,
+      meta: {
+        totalCount,
+        totalPages,
+        currentPage: page,
+        itemsPerPage: limit,
+      },
+    });
+  } catch (error) {
+    next(error)
+  }
+};
+
+// Create Product variant
+export const createProductVariant = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { productId, price, stock } = req.body;
+
+    // Check if the product exists
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+    }
+
+    // Create a new product variant 
+    const newProductVariant = await prisma.product_Variant.create({
+      data: {
+        price,
+        stock,
+        productId,  // makes relation with productId of Product table
+      },
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Product variant added successfully',
+      data: newProductVariant,
+    });
+  } catch (error) {
+      next(error);
+  }
+};
+
+// Get Product Variant by Id
+export const getProductVariantById = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { productId } = req.params;
+
+    // Fetch the product variant by ID
+    const productVariants = await prisma.product_Variant.findMany({
+      where: { productId },
+      include: {
+        attributes: true,  // Include product variant attributes
+      },
+    });
+
+    if (!productVariants) {
+      res.status(404).json({ error: 'Product variant not found' });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Product variant fetched successfully',
+      data: productVariants,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update Product Variant
+export const updateProductVariant = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { price, stock, productId } = req.body;
+
+    // Check if the product variant exists
+    const productVariant = await prisma.product_Variant.findUnique({
+      where: { id },
+    });
+
+    if (!productVariant) {
+      res.status(404).json({ error: 'Product variant not found' });
+    }
+
+    // Update the product variant
+    const updatedProductVariant = await prisma.product_Variant.update({
+      where: { id },
+      data: {
+        price,
+        stock,
+        productId,
+      },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Product variant updated successfully',
+      data: updatedProductVariant,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
