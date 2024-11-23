@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import upload from '../middleware/multer';
+
 import {
   test,
 
@@ -23,7 +25,10 @@ import {
 
   createProductVariant,
   getProductVariantById,
-  updateProductVariant
+  updateProductVariant,
+  uploadProductImage,
+  getAllProductImages,
+  deleteProductImage
   
 } from '../controllers/product.controller';
 
@@ -60,5 +65,10 @@ router.get('/admin/categories', getAllCategories);
 router.post('/admin/product-variant', createProductVariant);
 router.get('/admin/product-variant/:id', getProductVariantById);
 router.patch('/admin/product-variant/:id', updateProductVariant);
+
+// Product Images
+router.post("/admin/product-images", upload.single("image"), uploadProductImage);
+router.get("/admin/product-images", getAllProductImages);
+router.delete("/admin/product-images/:id", deleteProductImage);
 
 export default router;

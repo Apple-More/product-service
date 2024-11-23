@@ -1,5 +1,6 @@
 import prisma from '../config/prisma';
 import { Request, Response, NextFunction } from 'express';
+import { uploadToBlobStorage } from '../utils/azureBlob';
 
 //Test route
 export const test = async (
@@ -543,3 +544,97 @@ export const updateProductVariant = async ( req: Request, res: Response, next: N
     next(error);
   }
 };
+
+// upload product-images
+export const uploadProductImage = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { productId, isHero } = req.body;
+
+      // Validate product existence
+      const product = await prisma.product.findUnique({ where: { id: productId } });
+      if (!product) {
+        res.status(404).json({ error: "Product not found" });
+      }
+
+      // Ensure file is provided
+      if (!req.file) {
+       res.status(400).json({ error: "No image file provided" });
+    }
+    
+      // Upload to Azure Blob Storage
+      const imageUrl = await uploadToBlobStorage(req.file!.buffer, req.file!.originalname);
+
+      // Save image metadata in the database
+      const newProductImage = await prisma.productImage.create({
+        data: {
+          imageUrl,
+          isHero: Boolean(isHero),
+          productId,
+        },
+      });
+
+      res.status(201).json({
+        status: "success",
+        message: "Product image uploaded successfully",
+        data: newProductImage,
+      });
+    } catch (error) {
+      next(error); 
+    }
+  }
+
+  // Get all product-images
+  export const getAllProductImages = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { productId } = req.query;
+  
+      // If `productId` is provided, filter images by product ID
+      const filter = productId ? { where: { productId: String(productId) } } : {};
+  
+      const productImages = await prisma.productImage.findMany({
+        where: filter?.where || {},
+        orderBy: { isHero: "desc" }, // Hero images come first
+      });
+  
+      if (productImages.length === 0) {
+         res.status(404).json({ message: "No product images found" });
+      }
+  
+      res.status(200).json({
+        status: "success",
+        message: "Product images fetched successfully",
+        data: productImages,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  // Delete Product-image
+  export const deleteProductImage = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+  
+      // Validate product image existence
+      const productImage = await prisma.productImage.findUnique({
+        where: { id },
+      });
+  
+      if (!productImage) {
+         res.status(404).json({ error: "Product image not found" });
+      }
+  
+      // Delete image record from the database
+      await prisma.productImage.delete({
+        where: { id },
+      });
+  
+      res.status(200).json({
+        status: "success",
+        message: "Product image deleted successfully from the database.",
+      });
+    } catch (error) {
+      next(error); 
+    }
+  };
+  
