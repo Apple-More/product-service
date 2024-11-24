@@ -1,5 +1,5 @@
 import prisma from '../config/prisma';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { uploadToBlobStorage } from '../utils/azureBlob';
 
 //Test route
@@ -637,4 +637,42 @@ export const uploadProductImage = async (req: Request, res: Response, next: Next
       next(error); 
     }
   };
+
+  // get product variant details by id
+  export const getProductVariantDetails: RequestHandler  = async (req:Request, res:Response, next:NextFunction): Promise<void> => {
+     const {productVariantId} = req.params;
+    //  console.log("Received Product Variant ID:", productVariantId);
+
+    try {
+      const productVariantDetails  = await prisma.product_Variant.findUnique({
+        where:{ id: productVariantId },
+        include: {
+          product: {
+            include: {
+              category: true,
+              images:true,
+            }
+          },
+          attributes: {
+            include: {
+              attributeValue: {
+                include:{
+                  attribute: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      if (!productVariantDetails) {
+        res.status(404).json({ message: "Product variant not found" });
+        return;
+      }
+  
+      res.status(200).json(productVariantDetails);
+    } catch (error) {
+      console.error("Error fetching product variant details:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
   
