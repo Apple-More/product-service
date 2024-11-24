@@ -1,4 +1,7 @@
 import { BlobServiceClient, BlockBlobClient } from "@azure/storage-blob";
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 
 //  initializes the BlobServiceClient. It allows interaction with blob containers and their contents.

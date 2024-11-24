@@ -28,7 +28,9 @@ import {
   updateProductVariant,
   uploadProductImage,
   getAllProductImages,
-  deleteProductImage
+  deleteProductImage,
+
+  getProductVariantDetails
   
 } from '../controllers/product.controller';
 
@@ -70,5 +72,8 @@ router.patch('/admin/product-variant/:id', updateProductVariant);
 router.post("/admin/product-images", upload.single("image"), uploadProductImage);
 router.get("/admin/product-images", getAllProductImages);
 router.delete("/admin/product-images/:id", deleteProductImage);
+
+//Get product variant details for cart items
+router.get("/cart-item-service/:productVariantId",getProductVariantDetails);
 
 export default router;
