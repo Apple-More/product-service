@@ -36,6 +36,7 @@ const prisma = {
   },
   productImage:{
     deleteMany: jest.fn(),
+    create: jest.fn(),
   },
   category:{
     create: jest.fn(),
