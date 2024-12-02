@@ -14,15 +14,26 @@ import { test,createProductAttribute ,
       getAllCategories,
       createProductVariant,
       getProductVariantById,
-      updateProductVariant} from '../../src/controllers/product.controller';
+      updateProductVariant,
+      uploadProductImage,
+      getAllProductImages,
+      deleteProductImage,getProductVariantDetails} from '../../src/controllers/product.controller';
 import request from 'supertest';
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../../src/config/prisma';
+import { uploadToBlobStorage } from "../../src/utils/azureBlob";
+
 
 
 
 // Mock the Prisma client
 jest.mock('../../src/config/prisma', () => require('../../tests/mocks/mock-prisma'));
+
+jest.mock("../../src/utils/azureBlob", () => ({
+  uploadToBlobStorage: jest.fn(),
+}));
+const uploadToBlobStorageMock = uploadToBlobStorage as jest.Mock;
+
 
 describe('test controller', () => {
     it('should respond with a success message', async () => {
@@ -1384,5 +1395,314 @@ describe('updateProductVariant', () => {
     expect(res.json).toHaveBeenCalledWith({
       error: 'Product variant not found',
     });
+  });
+});
+
+// test: upload product-images
+describe('uploadProductImage Controller', () => {
+  it('should upload an image and save metadata successfully', async () => {
+    // Mock data
+    const mockProduct = { id: '1', name: 'Test Product' };
+    const mockImageUrl = 'https://example.com/image.jpg';
+    const mockImage = { id: '1', imageUrl: mockImageUrl, isHero: true, productId: '1' };
+
+    // Mock Prisma and Azure Blob functions
+    prisma.product.findUnique = jest.fn().mockResolvedValue(mockProduct);
+    prisma.productImage.create = jest.fn().mockResolvedValue(mockImage);
+    uploadToBlobStorageMock.mockResolvedValue(mockImageUrl);
+
+    // Mock request, response, and next
+    const req = {
+      body: { productId: '1', isHero: true },
+      file: { buffer: Buffer.from('test'), originalname: 'image.jpg' },
+    } as unknown as Request;
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+
+    const next = jest.fn();
+
+    // Call the function
+    await uploadProductImage(req, res, next);
+
+    // Assertions
+    expect(prisma.product.findUnique).toHaveBeenCalledWith({ where: { id: '1' } });
+    expect(uploadToBlobStorageMock).toHaveBeenCalledWith(req.file!.buffer, req.file!.originalname);
+    expect(prisma.productImage.create).toHaveBeenCalledWith({
+      data: {
+        imageUrl: mockImageUrl,
+        isHero: true,
+        productId: '1',
+      },
+    });
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'Product image uploaded successfully',
+      data: mockImage,
+    });
+  });
+
+  it('should return 404 if the product does not exist', async () => {
+    prisma.product.findUnique = jest.fn().mockResolvedValue(null);
+
+    const req = {
+      body: { productId: 'invalid-id', isHero: false },
+      file: { buffer: Buffer.from('test'), originalname: 'image.jpg' },
+    } as unknown as Request;
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+
+    const next = jest.fn();
+
+    await uploadProductImage(req, res, next);
+
+    expect(prisma.product.findUnique).toHaveBeenCalledWith({ where: { id: 'invalid-id' } });
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Product not found' });
+  });
+
+  it('should return 400 if no file is provided', async () => {
+    const mockProduct = { id: '1', name: 'Test Product' };
+    prisma.product.findUnique = jest.fn().mockResolvedValue(mockProduct);
+
+    const req = {
+      body: { productId: '1', isHero: true },
+      file: null,
+    } as unknown as Request;
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+
+    const next = jest.fn();
+
+    await uploadProductImage(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'No image file provided' });
+  });
+});
+// test: getAll product-images
+describe('getAllProductImages Controller', () => {
+  it('should fetch all images for a given productId', async () => {
+    const mockImages = [
+      { id: '1', imageUrl: 'https://example.com/image1.jpg', isHero: true, productId: '1' },
+      { id: '2', imageUrl: 'https://example.com/image2.jpg', isHero: false, productId: '1' },
+    ];
+
+    prisma.productImage.findMany = jest.fn().mockResolvedValue(mockImages);
+
+    const req = {
+      query: { productId: '1' },
+    } as unknown as Request;
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+
+    const next = jest.fn();
+
+    await getAllProductImages(req, res, next);
+
+    expect(prisma.productImage.findMany).toHaveBeenCalledWith({
+      where: { productId: '1' },
+      orderBy: { isHero: 'desc' },
+    });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'Product images fetched successfully',
+      data: mockImages,
+    });
+  });
+
+  it('should return 404 if no images are found', async () => {
+    prisma.productImage.findMany = jest.fn().mockResolvedValue([]);
+
+    const req = {
+      query: { productId: '1' },
+    } as unknown as Request;
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+
+    const next = jest.fn();
+
+    await getAllProductImages(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ message: 'No product images found' });
+  });
+});
+// test: delete product-images
+describe('deleteProductImage Controller', () => {
+  it('should delete a product image successfully', async () => {
+    const mockProductImage = { id: '1', imageUrl: 'https://example.com/image.jpg' };
+
+    // Mock Prisma methods
+    prisma.productImage.findUnique = jest.fn().mockResolvedValue(mockProductImage);
+    prisma.productImage.delete = jest.fn().mockResolvedValue(mockProductImage);
+
+    // Mock request, response, and next
+    const req = { params: { id: '1' } } as unknown as Request;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+    const next = jest.fn();
+
+    await deleteProductImage(req, res, next);
+
+    expect(prisma.productImage.findUnique).toHaveBeenCalledWith({ where: { id: '1' } });
+    expect(prisma.productImage.delete).toHaveBeenCalledWith({ where: { id: '1' } });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'Product image deleted successfully from the database.',
+    });
+  });
+
+  it('should return 404 if the product image is not found', async () => {
+    prisma.productImage.findUnique = jest.fn().mockResolvedValue(null);
+
+    const req = { params: { id: 'nonexistent-id' } } as unknown as Request;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+    const next = jest.fn();
+
+    await deleteProductImage(req, res, next);
+
+    expect(prisma.productImage.findUnique).toHaveBeenCalledWith({ where: { id: 'nonexistent-id' } });
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Product image not found' });
+  });
+
+  it('should handle errors by calling next', async () => {
+    const error = new Error('Database error');
+    prisma.productImage.findUnique = jest.fn().mockRejectedValue(error);
+
+    const req = { params: { id: '1' } } as unknown as Request;
+    const res = {} as unknown as Response;
+    const next = jest.fn();
+
+    await deleteProductImage(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(error);
+  });
+});
+// test: get product variant details
+describe('getProductVariantDetails Controller', () => {
+  it('should return product variant details when found', async () => {
+    // Mock the database response
+    const mockProductVariantDetails = {
+      id: '1',
+      product: { id: '10', category: { id: '20', name: 'Category A' }, images: [] },
+      attributes: [],
+    };
+    (prisma.product_Variant.findUnique as jest.Mock).mockResolvedValue(mockProductVariantDetails);
+
+    const req = {
+      params: { productVariantId: '1' },
+    } as unknown as Request;
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+
+    const next = jest.fn();
+
+    await getProductVariantDetails(req, res, next);
+
+    expect(prisma.product_Variant.findUnique).toHaveBeenCalledWith({
+      where: { id: '1' },
+      include: {
+        product: { include: { category: true, images: true } },
+        attributes: {
+          include: {
+            attributeValue: { include: { attribute: true } },
+          },
+        },
+      },
+    });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(mockProductVariantDetails);
+  });
+
+  it('should return a 404 error if the product variant is not found', async () => {
+    // Mock the database response
+    (prisma.product_Variant.findUnique as jest.Mock).mockResolvedValue(null);
+
+    const req = {
+      params: { productVariantId: '1' },
+    } as unknown as Request;
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+
+    const next = jest.fn();
+
+    await getProductVariantDetails(req, res, next);
+
+    expect(prisma.product_Variant.findUnique).toHaveBeenCalledWith({
+      where: { id: '1' },
+      include: {
+        product: { include: { category: true, images: true } },
+        attributes: {
+          include: {
+            attributeValue: { include: { attribute: true } },
+          },
+        },
+      },
+    });
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Product variant not found' });
+  });
+
+  it('should handle database errors and return a 500 response', async () => {
+    // Mock a database error
+    const error = new Error('Database error');
+    (prisma.product_Variant.findUnique as jest.Mock).mockRejectedValue(error);
+
+    const req = {
+      params: { productVariantId: '1' },
+    } as unknown as Request;
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+
+    const next = jest.fn();
+
+    await getProductVariantDetails(req, res, next);
+
+    expect(prisma.product_Variant.findUnique).toHaveBeenCalledWith({
+      where: { id: '1' },
+      include: {
+        product: { include: { category: true, images: true } },
+        attributes: {
+          include: {
+            attributeValue: { include: { attribute: true } },
+          },
+        },
+      },
+    });
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error' });
   });
 });
