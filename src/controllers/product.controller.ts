@@ -725,7 +725,6 @@ export const deleteProductImage = async (
 export const getProductVariantDetails: RequestHandler = async (
   req: Request,
   res: Response,
-  next: NextFunction,
 ): Promise<void> => {
   const { productVariantId } = req.params;
   //  console.log("Received Product Variant ID:", productVariantId);
@@ -759,6 +758,81 @@ export const getProductVariantDetails: RequestHandler = async (
     res.status(200).json(productVariantDetails);
   } catch (error) {
     console.error('Error fetching product variant details:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const checkProductVariantAvailabilityAndCalculateAmounts = async (
+  req: Request,
+  res: Response,
+): Promise<any> => {
+  const { productVariantIds: variantIds } = req.body;
+
+  if (!variantIds || !Array.isArray(variantIds) || variantIds.length === 0) {
+    res.status(400).json({
+      status: false,
+      data: null,
+      message: 'Invalid product variant IDs',
+    });
+    return;
+  }
+
+  let totalAmount = 0;
+  try {
+    const variantDetails = [];
+
+    for (const variant of variantIds) {
+      const { variantId, quantity } = variant;
+
+      if (!variantId) {
+        return res.status(404).json({
+          status: false,
+          data: null,
+          message: 'Variant ID required',
+        });
+      }
+
+      const productVariant = await prisma.product_Variant.findUnique({
+        where: { id: variantId },
+      });
+
+      if (!productVariant) {
+        return res.status(404).json({
+          status: false,
+          data: null,
+          message: 'Product variant not found',
+        });
+      }
+
+      if (productVariant.stock < quantity) {
+        return res.status(400).json({
+          status: false,
+          data: null,
+          message: 'Insufficient stock',
+        });
+      }
+
+      const currentVariantAmount = productVariant.price * quantity;
+
+      totalAmount += currentVariantAmount;
+
+      variantDetails.push({
+        product_variant_id: variantId,
+        quantity,
+        price: currentVariantAmount,
+      });
+    }
+
+    res.status(200).json({
+      status: true,
+      data: {
+        variantDetails: variantDetails,
+        amount: totalAmount,
+      },
+      message: 'Product variant available',
+    });
+  } catch (error) {
+    console.error('Error checking product variant availability:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

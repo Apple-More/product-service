@@ -24,6 +24,7 @@ import {
   getAllProductImages,
   deleteProductImage,
   getProductVariantDetails,
+  checkProductVariantAvailabilityAndCalculateAmounts,
 } from '../controllers/product.controller';
 
 const router = Router();
@@ -73,5 +74,11 @@ router.delete('/admin/product-images/:id', deleteProductImage);
 
 //Get product variant details for cart items
 router.get('/cart-item-service/:productVariantId', getProductVariantDetails);
+
+// Order service related routes
+router.post(
+  '/product-variant-prices',
+  checkProductVariantAvailabilityAndCalculateAmounts,
+);
 
 export default router;
