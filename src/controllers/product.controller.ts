@@ -816,6 +816,15 @@ export const checkProductVariantAvailabilityAndCalculateAmounts = async (
 
       totalAmount += currentVariantAmount;
 
+      await prisma.product_Variant.update({
+        where: { id: variantId },
+        data: {
+          stock: {
+            decrement: quantity,
+          },
+        },
+      });
+
       variantDetails.push({
         product_variant_id: variantId,
         quantity,
