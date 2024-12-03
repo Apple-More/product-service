@@ -766,7 +766,7 @@ export const checkProductVariantAvailabilityAndCalculateAmounts = async (
   req: Request,
   res: Response,
 ): Promise<any> => {
-  const { productVariantIds: variantIds } = req.body;
+  const variantIds = req.body;
 
   if (!variantIds || !Array.isArray(variantIds) || variantIds.length === 0) {
     res.status(400).json({
