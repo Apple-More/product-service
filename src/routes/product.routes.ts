@@ -3,37 +3,28 @@ import upload from '../middleware/multer';
 
 import {
   test,
-
   createProductAttribute,
   getProductAttribute,
-
   getAllProductAttributes,
   createProductAttributeValue,
   getProductAttributeValuesByAttributeId,
-
   createProductVariantAttribute,
   getAllProductVariantAttributes,
-
   createProduct,
   getAllProducts,
   getProductById,
   updateProduct,
   deleteProduct,
-
   createCategory,
   getAllCategories,
-
   createProductVariant,
   getProductVariantById,
   updateProductVariant,
   uploadProductImage,
   getAllProductImages,
   deleteProductImage,
-
-  getProductVariantDetails
-  
+  getProductVariantDetails,
 } from '../controllers/product.controller';
-
 
 const router = Router();
 
@@ -46,7 +37,10 @@ router.get('/admin/product-attributes', getAllProductAttributes);
 
 // Attribute value routes
 router.post('/admin/attribute-values', createProductAttributeValue);
-router.get('/admin/attribute-values/:attributeId', getProductAttributeValuesByAttributeId);
+router.get(
+  '/admin/attribute-values/:attributeId',
+  getProductAttributeValuesByAttributeId,
+);
 
 // Product Variant Attribute routes
 router.post('/admin/product-variant-attribute', createProductVariantAttribute);
@@ -69,11 +63,15 @@ router.get('/admin/product-variant/:id', getProductVariantById);
 router.patch('/admin/product-variant/:id', updateProductVariant);
 
 // Product Images
-router.post("/admin/product-images", upload.single("image"), uploadProductImage);
-router.get("/admin/product-images", getAllProductImages);
-router.delete("/admin/product-images/:id", deleteProductImage);
+router.post(
+  '/admin/product-images',
+  upload.single('image'),
+  uploadProductImage,
+);
+router.get('/admin/product-images', getAllProductImages);
+router.delete('/admin/product-images/:id', deleteProductImage);
 
 //Get product variant details for cart items
-router.get("/cart-item-service/:productVariantId",getProductVariantDetails);
+router.get('/cart-item-service/:productVariantId', getProductVariantDetails);
 
 export default router;
