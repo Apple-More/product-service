@@ -3,11 +3,7 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { uploadToBlobStorage } from '../utils/azureBlob';
 
 //Test route
-export const test = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+export const test = async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.status(200).json({
       status: 'success',
@@ -16,10 +12,14 @@ export const test = async (
   } catch (error) {
     next(error);
   }
-}
+};
 
 // Create product attribute
-export const createProductAttribute = async ( req: Request, res: Response, next: NextFunction,) => {
+export const createProductAttribute = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { name } = req.body;
     const newAttribute = await prisma.product_Attribute.create({
@@ -38,13 +38,17 @@ export const createProductAttribute = async ( req: Request, res: Response, next:
 };
 
 // Get a product attribute by ID (including its values)
-export const getProductAttribute = async ( req: Request, res: Response, next: NextFunction,) => {
+export const getProductAttribute = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
     const attribute = await prisma.product_Attribute.findUnique({
       where: { id },
       include: {
-        values: true, 
+        values: true,
       },
     });
     if (!attribute) {
@@ -61,7 +65,11 @@ export const getProductAttribute = async ( req: Request, res: Response, next: Ne
 };
 
 // Get all product attributes with their values
-export const getAllProductAttributes = async ( req: Request, res: Response, next: NextFunction,) => {
+export const getAllProductAttributes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const attributes = await prisma.product_Attribute.findMany({
       include: {
@@ -79,7 +87,11 @@ export const getAllProductAttributes = async ( req: Request, res: Response, next
 };
 
 // Create a product attribute value
-export const createProductAttributeValue = async ( req: Request, res: Response, next: NextFunction) => {
+export const createProductAttributeValue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { value, attributeId } = req.body;
 
@@ -88,7 +100,7 @@ export const createProductAttributeValue = async ( req: Request, res: Response, 
     });
 
     if (!attributeExists) {
-     res.status(404).json({ message: 'Product Attribute not found' });
+      res.status(404).json({ message: 'Product Attribute not found' });
     }
 
     const newAttributeValue = await prisma.product_Attribute_Value.create({
@@ -103,14 +115,17 @@ export const createProductAttributeValue = async ( req: Request, res: Response, 
       message: 'Attribute values added successfull',
       data: newAttributeValue,
     });
-
   } catch (error) {
     next(error);
   }
 };
 
 // Get a product attribute value by attribute Id
-export const getProductAttributeValuesByAttributeId = async ( req: Request, res: Response, next: NextFunction) => {
+export const getProductAttributeValuesByAttributeId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { attributeId } = req.params;
 
@@ -123,7 +138,9 @@ export const getProductAttributeValuesByAttributeId = async ( req: Request, res:
     });
 
     if (!attributeValues.length) {
-     res.status(404).json({ message: 'No Product Attribute Values found for this attribute ID' });
+      res.status(404).json({
+        message: 'No Product Attribute Values found for this attribute ID',
+      });
     }
 
     res.status(201).json({
@@ -137,16 +154,21 @@ export const getProductAttributeValuesByAttributeId = async ( req: Request, res:
 };
 
 // Create a Product Variant Attribute
-export const createProductVariantAttribute = async ( req: Request, res: Response, next: NextFunction) => {
+export const createProductVariantAttribute = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { productVariantId, attributeValueId } = req.body;
 
-    const newProductVariantAttribute = await prisma.product_Variant_Attribute.create({
-      data: {
-        productVariantId,
-        attributeValueId,
-      },
-    });
+    const newProductVariantAttribute =
+      await prisma.product_Variant_Attribute.create({
+        data: {
+          productVariantId,
+          attributeValueId,
+        },
+      });
 
     res.status(201).json({
       status: 'success',
@@ -158,8 +180,12 @@ export const createProductVariantAttribute = async ( req: Request, res: Response
   }
 };
 
-// Get all Product Variant Attributes 
-export const getAllProductVariantAttributes = async ( req: Request, res: Response, next: NextFunction) => {
+// Get all Product Variant Attributes
+export const getAllProductVariantAttributes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const page = parseInt(req.query.page as string) || 1; // Default to page 1
     let limit = parseInt(req.query.limit as string) || 10; // Default to 10 items per page
@@ -170,14 +196,15 @@ export const getAllProductVariantAttributes = async ( req: Request, res: Respons
 
     const skip = (page - 1) * limit;
 
-    const productVariantAttributes = await prisma.product_Variant_Attribute.findMany({
-      skip,
-      take: limit,
-      include: {
-        productVariant: true,
-        attributeValue: true,
-      },
-    });
+    const productVariantAttributes =
+      await prisma.product_Variant_Attribute.findMany({
+        skip,
+        take: limit,
+        include: {
+          productVariant: true,
+          attributeValue: true,
+        },
+      });
 
     const totalCount = await prisma.product_Variant_Attribute.count();
     const totalPages = Math.ceil(totalCount / limit);
@@ -197,9 +224,14 @@ export const getAllProductVariantAttributes = async ( req: Request, res: Respons
 };
 
 // Create Product
-export const createProduct = async ( req: Request, res: Response, next: NextFunction) => {
+export const createProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const { productName, description, specification, categoryId, adminId } = req.body;
+    const { productName, description, specification, categoryId, adminId } =
+      req.body;
 
     const newProduct = await prisma.product.create({
       data: {
@@ -208,7 +240,7 @@ export const createProduct = async ( req: Request, res: Response, next: NextFunc
         specification,
         categoryId,
         adminId,
-      }
+      },
     });
 
     res.status(201).json({
@@ -216,15 +248,17 @@ export const createProduct = async ( req: Request, res: Response, next: NextFunc
       message: 'Product created successfully',
       data: newProduct,
     });
-
   } catch (error) {
     next(error);
   }
-
-}
+};
 
 // Get all product
-export const getAllProducts = async ( req: Request, res: Response, next: NextFunction)=> {
+export const getAllProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     let limit = parseInt(req.query.limit as string) || 10;
@@ -245,7 +279,7 @@ export const getAllProducts = async ( req: Request, res: Response, next: NextFun
         images: {
           where: { isHero: true },
         },
-        variants: true
+        variants: true,
       },
     });
 
@@ -276,15 +310,19 @@ export const getAllProducts = async ( req: Request, res: Response, next: NextFun
 };
 
 // Get Product by ID
-export const getProductById = async ( req: Request, res: Response, next: NextFunction)  => {
+export const getProductById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
 
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        variants: true,  // Include product variants
-        images: true,    // Include all product images
+        variants: true, // Include product variants
+        images: true, // Include all product images
       },
     });
 
@@ -303,7 +341,11 @@ export const getProductById = async ( req: Request, res: Response, next: NextFun
 };
 
 // Update Product details
-export const updateProduct = async ( req: Request, res: Response, next: NextFunction) => {
+export const updateProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
     const { productName, description, specification, categoryId } = req.body;
@@ -341,7 +383,11 @@ export const updateProduct = async ( req: Request, res: Response, next: NextFunc
 };
 
 // Delete Product
-export const deleteProduct = async ( req: Request, res: Response, next: NextFunction) => {
+export const deleteProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
 
@@ -381,7 +427,11 @@ export const deleteProduct = async ( req: Request, res: Response, next: NextFunc
 };
 
 // Create a category
-export const createCategory = async ( req: Request, res: Response, next: NextFunction) => {
+export const createCategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { categoryName } = req.body;
 
@@ -403,7 +453,11 @@ export const createCategory = async ( req: Request, res: Response, next: NextFun
 };
 
 // Get all categories
-export const getAllCategories = async ( req: Request, res: Response, next: NextFunction) => {
+export const getAllCategories = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     // Parse pagination parameters from the query string
     const page = parseInt(req.query.page as string) || 1; // Default to page 1
@@ -446,12 +500,16 @@ export const getAllCategories = async ( req: Request, res: Response, next: NextF
       },
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
 // Create Product variant
-export const createProductVariant = async ( req: Request, res: Response, next: NextFunction) => {
+export const createProductVariant = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { productId, price, stock } = req.body;
 
@@ -464,12 +522,12 @@ export const createProductVariant = async ( req: Request, res: Response, next: N
       res.status(404).json({ error: 'Product not found' });
     }
 
-    // Create a new product variant 
+    // Create a new product variant
     const newProductVariant = await prisma.product_Variant.create({
       data: {
         price,
         stock,
-        productId,  // makes relation with productId of Product table
+        productId, // makes relation with productId of Product table
       },
     });
 
@@ -479,12 +537,16 @@ export const createProductVariant = async ( req: Request, res: Response, next: N
       data: newProductVariant,
     });
   } catch (error) {
-      next(error);
+    next(error);
   }
 };
 
 // Get Product Variant by Id
-export const getProductVariantById = async ( req: Request, res: Response, next: NextFunction) => {
+export const getProductVariantById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { productId } = req.params;
 
@@ -492,7 +554,7 @@ export const getProductVariantById = async ( req: Request, res: Response, next: 
     const productVariants = await prisma.product_Variant.findMany({
       where: { productId },
       include: {
-        attributes: true,  // Include product variant attributes
+        attributes: true, // Include product variant attributes
       },
     });
 
@@ -511,7 +573,11 @@ export const getProductVariantById = async ( req: Request, res: Response, next: 
 };
 
 // Update Product Variant
-export const updateProductVariant = async ( req: Request, res: Response, next: NextFunction) => {
+export const updateProductVariant = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
     const { price, stock, productId } = req.body;
@@ -546,133 +612,236 @@ export const updateProductVariant = async ( req: Request, res: Response, next: N
 };
 
 // upload product-images
-export const uploadProductImage = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { productId, isHero } = req.body;
+export const uploadProductImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { productId, isHero } = req.body;
 
-      // Validate product existence
-      const product = await prisma.product.findUnique({ where: { id: productId } });
-      if (!product) {
-        res.status(404).json({ error: "Product not found" });
-      }
-
-      // Ensure file is provided
-      if (!req.file) {
-       res.status(400).json({ error: "No image file provided" });
+    // Validate product existence
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
     }
-    
-      // Upload to Azure Blob Storage
-      const imageUrl = await uploadToBlobStorage(req.file!.buffer, req.file!.originalname);
 
-      // Save image metadata in the database
-      const newProductImage = await prisma.productImage.create({
-        data: {
-          imageUrl,
-          isHero: Boolean(isHero),
-          productId,
-        },
-      });
-
-      res.status(201).json({
-        status: "success",
-        message: "Product image uploaded successfully",
-        data: newProductImage,
-      });
-    } catch (error) {
-      next(error); 
+    // Ensure file is provided
+    if (!req.file) {
+      res.status(400).json({ error: 'No image file provided' });
     }
+
+    // Upload to Azure Blob Storage
+    const imageUrl = await uploadToBlobStorage(
+      req.file!.buffer,
+      req.file!.originalname,
+    );
+
+    // Save image metadata in the database
+    const newProductImage = await prisma.productImage.create({
+      data: {
+        imageUrl,
+        isHero: Boolean(isHero),
+        productId,
+      },
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Product image uploaded successfully',
+      data: newProductImage,
+    });
+  } catch (error) {
+    next(error);
   }
+};
 
-  // Get all product-images
-  export const getAllProductImages = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { productId } = req.query;
-  
-      // If `productId` is provided, filter images by product ID
-      const filter = productId ? { where: { productId: String(productId) } } : {};
-  
-      const productImages = await prisma.productImage.findMany({
-        where: filter?.where || {},
-        orderBy: { isHero: "desc" }, // Hero images come first
-      });
-  
-      if (productImages.length === 0) {
-         res.status(404).json({ message: "No product images found" });
-      }
-  
-      res.status(200).json({
-        status: "success",
-        message: "Product images fetched successfully",
-        data: productImages,
-      });
-    } catch (error) {
-      next(error);
+// Get all product-images
+export const getAllProductImages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { productId } = req.query;
+
+    // If `productId` is provided, filter images by product ID
+    const filter = productId ? { where: { productId: String(productId) } } : {};
+
+    const productImages = await prisma.productImage.findMany({
+      where: filter?.where || {},
+      orderBy: { isHero: 'desc' }, // Hero images come first
+    });
+
+    if (productImages.length === 0) {
+      res.status(404).json({ message: 'No product images found' });
     }
-  };
-  
-  // Delete Product-image
-  export const deleteProductImage = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { id } = req.params;
-  
-      // Validate product image existence
-      const productImage = await prisma.productImage.findUnique({
-        where: { id },
-      });
-  
-      if (!productImage) {
-         res.status(404).json({ error: "Product image not found" });
-      }
-  
-      // Delete image record from the database
-      await prisma.productImage.delete({
-        where: { id },
-      });
-  
-      res.status(200).json({
-        status: "success",
-        message: "Product image deleted successfully from the database.",
-      });
-    } catch (error) {
-      next(error); 
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Product images fetched successfully',
+      data: productImages,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete Product-image
+export const deleteProductImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = req.params;
+
+    // Validate product image existence
+    const productImage = await prisma.productImage.findUnique({
+      where: { id },
+    });
+
+    if (!productImage) {
+      res.status(404).json({ error: 'Product image not found' });
     }
-  };
 
-  // get product variant details by id
-  export const getProductVariantDetails: RequestHandler  = async (req:Request, res:Response, next:NextFunction): Promise<void> => {
-     const {productVariantId} = req.params;
-    //  console.log("Received Product Variant ID:", productVariantId);
+    // Delete image record from the database
+    await prisma.productImage.delete({
+      where: { id },
+    });
 
-    try {
-      const productVariantDetails  = await prisma.product_Variant.findUnique({
-        where:{ id: productVariantId },
-        include: {
-          product: {
-            include: {
-              category: true,
-              images:true,
-            }
+    res.status(200).json({
+      status: 'success',
+      message: 'Product image deleted successfully from the database.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// get product variant details by id
+export const getProductVariantDetails: RequestHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const { productVariantId } = req.params;
+  //  console.log("Received Product Variant ID:", productVariantId);
+
+  try {
+    const productVariantDetails = await prisma.product_Variant.findUnique({
+      where: { id: productVariantId },
+      include: {
+        product: {
+          include: {
+            category: true,
+            images: true,
           },
-          attributes: {
-            include: {
-              attributeValue: {
-                include:{
-                  attribute: true,
-                },
+        },
+        attributes: {
+          include: {
+            attributeValue: {
+              include: {
+                attribute: true,
               },
             },
           },
         },
-      });
-      if (!productVariantDetails) {
-        res.status(404).json({ message: "Product variant not found" });
-        return;
-      }
-  
-      res.status(200).json(productVariantDetails);
-    } catch (error) {
-      console.error("Error fetching product variant details:", error);
-      res.status(500).json({ message: "Internal server error" });
+      },
+    });
+    if (!productVariantDetails) {
+      res.status(404).json({ message: 'Product variant not found' });
+      return;
     }
+
+    res.status(200).json(productVariantDetails);
+  } catch (error) {
+    console.error('Error fetching product variant details:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
-  
+};
+
+export const checkProductVariantAvailabilityAndCalculateAmounts = async (
+  req: Request,
+  res: Response,
+): Promise<any> => {
+  const variantIds = req.body;
+
+  if (!variantIds || !Array.isArray(variantIds) || variantIds.length === 0) {
+    res.status(400).json({
+      status: false,
+      data: null,
+      message: 'Invalid product variant IDs',
+    });
+    return;
+  }
+
+  let totalAmount = 0;
+  try {
+    const variantDetails = [];
+
+    for (const variant of variantIds) {
+      const { variantId, quantity } = variant;
+
+      if (!variantId) {
+        return res.status(404).json({
+          status: false,
+          data: null,
+          message: 'Variant ID required',
+        });
+      }
+
+      const productVariant = await prisma.product_Variant.findUnique({
+        where: { id: variantId },
+      });
+
+      if (!productVariant) {
+        return res.status(404).json({
+          status: false,
+          data: null,
+          message: 'Product variant not found',
+        });
+      }
+
+      if (productVariant.stock < quantity) {
+        return res.status(400).json({
+          status: false,
+          data: null,
+          message: 'Insufficient stock',
+        });
+      }
+
+      const currentVariantAmount = productVariant.price * quantity;
+
+      totalAmount += currentVariantAmount;
+
+      await prisma.product_Variant.update({
+        where: { id: variantId },
+        data: {
+          stock: {
+            decrement: quantity,
+          },
+        },
+      });
+
+      variantDetails.push({
+        product_variant_id: variantId,
+        quantity,
+        price: currentVariantAmount,
+      });
+    }
+
+    res.status(200).json({
+      status: true,
+      data: {
+        variantDetails: variantDetails,
+        amount: totalAmount,
+      },
+      message: 'Product variant available',
+    });
+  } catch (error) {
+    console.error('Error checking product variant availability:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

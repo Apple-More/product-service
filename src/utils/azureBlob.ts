@@ -1,20 +1,20 @@
 import { BlobServiceClient, BlockBlobClient } from "@azure/storage-blob";
-import dotenv from 'dotenv';
-
-dotenv.config();
-
+import { AZURE_BLOB_CONNECTION_STRING, AZURE_BLOB_CONTAINER_NAME } from "../config";
 
 //  initializes the BlobServiceClient. It allows interaction with blob containers and their contents.
-const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_BLOB_CONNECTION_STRING!);
+const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_BLOB_CONNECTION_STRING);
 
 // gets a client for interacting with a specific blob container.
-const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_BLOB_CONTAINER_NAME!);
+const containerClient = blobServiceClient.getContainerClient(AZURE_BLOB_CONTAINER_NAME);
 
-
-export const uploadToBlobStorage = async (fileBuffer: Buffer, fileName: string) => {
+export const uploadToBlobStorage = async (
+  fileBuffer: Buffer,
+  fileName: string,
+) => {
   const blobName = `${Date.now()}-${fileName}`;
-  const blockBlobClient: BlockBlobClient = containerClient.getBlockBlobClient(blobName);
+  const blockBlobClient: BlockBlobClient =
+    containerClient.getBlockBlobClient(blobName);
 
   await blockBlobClient.upload(fileBuffer, fileBuffer.length);
   return blockBlobClient.url; // Return the public URL of the file
-}
+};
