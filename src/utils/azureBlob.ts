@@ -7,11 +7,14 @@ const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_BLOB_CONN
 // gets a client for interacting with a specific blob container.
 const containerClient = blobServiceClient.getContainerClient(AZURE_BLOB_CONTAINER_NAME);
 
-
-export const uploadToBlobStorage = async (fileBuffer: Buffer, fileName: string) => {
+export const uploadToBlobStorage = async (
+  fileBuffer: Buffer,
+  fileName: string,
+) => {
   const blobName = `${Date.now()}-${fileName}`;
-  const blockBlobClient: BlockBlobClient = containerClient.getBlockBlobClient(blobName);
+  const blockBlobClient: BlockBlobClient =
+    containerClient.getBlockBlobClient(blobName);
 
   await blockBlobClient.upload(fileBuffer, fileBuffer.length);
   return blockBlobClient.url; // Return the public URL of the file
-}
+};
