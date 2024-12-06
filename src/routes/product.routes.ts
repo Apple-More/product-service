@@ -38,10 +38,7 @@ router.get('/admin/product-attributes', getAllProductAttributes);
 
 // Attribute value routes
 router.post('/admin/attribute-values', createProductAttributeValue);
-router.get(
-  '/admin/attribute-values/:attributeId',
-  getProductAttributeValuesByAttributeId,
-);
+router.get('/admin/attribute-values/:attributeId', getProductAttributeValuesByAttributeId);
 
 // Product Variant Attribute routes
 router.post('/admin/product-variant-attribute', createProductVariantAttribute);
