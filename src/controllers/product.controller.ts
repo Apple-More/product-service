@@ -321,19 +321,55 @@ export const getProductById = async (
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        variants: true, // Include product variants
+        variants: {
+          include: {
+            attributes: {
+              include: {
+                attributeValue: {
+                  include: {
+                    attribute: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         images: true, // Include all product images
+        category: true, // Include category details
       },
     });
 
     if (!product) {
       res.status(404).json({ error: 'Product not found' });
+      return;
     }
+
+    // Format the response for easier frontend integration
+    const formattedProduct = {
+      id: product.id,
+      productName: product.productName,
+      description: product.description,
+      specification: product.specification,
+      categoryId: product.categoryId,
+      adminId: product.adminId,
+      category: product.category,
+      images: product.images,
+      variants: product.variants.map(variant => ({
+      id: variant.id,
+      price: variant.price,
+      stock: variant.stock,
+      attributes: variant.attributes.map(attr => ({
+        id: attr.id,
+        value: attr.attributeValue.value,
+        name: attr.attributeValue.attribute.name,
+      })).sort((a, b) => a.name.localeCompare(b.name)),
+      })),
+    };
 
     res.status(200).json({
       status: 'success',
       message: 'Product fetched successfully',
-      data: product,
+      data: formattedProduct,
     });
   } catch (error) {
     next(error);
