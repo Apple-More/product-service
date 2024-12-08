@@ -25,6 +25,7 @@ import {
   deleteProductImage,
   getProductVariantDetails,
   checkProductVariantAvailabilityAndCalculateAmounts,
+  getAllSearchedProducts
 } from '../controllers/product.controller';
 
 const router = Router();
@@ -53,6 +54,9 @@ router.get('/admin/product', getAllProducts);
 router.get('/admin/product/:id', getProductById);
 router.patch('/admin/product/:id', updateProduct);
 router.delete('/admin/product/:id', deleteProduct);
+
+router.get('/public/product/:id', getProductById);
+router.get('/public/product', getAllSearchedProducts);
 
 // Category routes
 router.post('/admin/categories', createCategory);
