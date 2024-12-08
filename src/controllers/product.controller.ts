@@ -288,7 +288,13 @@ export const getAllProducts = async (
         status: 'fail',
         message: 'No Products found',
       });
+      return;
     }
+
+    const formattedProducts = products.map(product => ({
+      ...product,
+      price: product.variants.reduce((min, variant) => variant.price < min ? variant.price : min, product.variants[0]?.price || 0),
+    }));
 
     const totalCount = await prisma.product.count();
     const totalPages = Math.ceil(totalCount / limit);
@@ -296,7 +302,7 @@ export const getAllProducts = async (
     res.status(200).json({
       status: 'success',
       message: 'products fetched successful',
-      data: products,
+      data: formattedProducts,
       meta: {
         totalCount,
         totalPages,
@@ -308,6 +314,95 @@ export const getAllProducts = async (
     next(error);
   }
 };
+
+export const getAllSearchedProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { query, category } = req.query;
+
+    if (query) {
+      const products = await prisma.product.findMany({
+        where: {
+          productName: {
+            contains: query as string,
+            mode: 'insensitive',
+          },
+        },
+        include: {
+          images: {
+            where: { isHero: true },
+          },
+          variants: true,
+        },
+      });
+
+      const formattedProducts = products.map(product => ({
+        ...product,
+        price: product.variants.reduce((min, variant) => variant.price < min ? variant.price : min, product.variants[0]?.price || 0),
+      }));
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Products fetched successfully',
+        data: formattedProducts,
+      });
+    } else if (category) {
+      const products = await prisma.product.findMany({
+        where: {
+          category: {
+            categoryName: {
+              contains: category as string,
+              mode: 'insensitive',
+            },
+          },
+        },
+        include: {
+          images: {
+            where: { isHero: true },
+          },
+          variants: true,
+        },
+      });
+
+      const formattedProducts = products.map(product => ({
+        ...product,
+        price: product.variants.reduce((min, variant) => variant.price < min ? variant.price : min, product.variants[0]?.price || 0),
+      }));
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Products fetched successfully',
+        data: formattedProducts,
+      });
+    } 
+  else {
+    const products = await prisma.product.findMany({
+      include: {
+        images: {
+          where: { isHero: true },
+        },
+        variants: true,
+      },
+    });
+
+    const formattedProducts = products.map(product => ({
+      ...product,
+      price: product.variants.reduce((min, variant) => variant.price < min ? variant.price : min, product.variants[0]?.price || 0),
+    }));
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Products fetched successfully',
+      data: formattedProducts,
+    });
+  }
+  } catch (error) {
+    next(error);
+  }
+}
 
 // Get Product by ID
 export const getProductById = async (
@@ -355,14 +450,14 @@ export const getProductById = async (
       category: product.category,
       images: product.images,
       variants: product.variants.map(variant => ({
-      id: variant.id,
-      price: variant.price,
-      stock: variant.stock,
-      attributes: variant.attributes.map(attr => ({
-        id: attr.id,
-        value: attr.attributeValue.value,
-        name: attr.attributeValue.attribute.name,
-      })).sort((a, b) => a.name.localeCompare(b.name)),
+        id: variant.id,
+        price: variant.price,
+        stock: variant.stock,
+        attributes: variant.attributes.map(attr => ({
+          id: attr.id,
+          value: attr.attributeValue.value,
+          name: attr.attributeValue.attribute.name,
+        })).sort((a, b) => a.name.localeCompare(b.name)),
       })),
     };
 
@@ -772,7 +867,9 @@ export const getProductVariantDetails: RequestHandler = async (
         product: {
           include: {
             category: true,
-            images: true,
+            images: {
+              where: { isHero: true },
+            }
           },
         },
         attributes: {
